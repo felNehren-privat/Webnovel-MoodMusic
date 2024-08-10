@@ -1,237 +1,223 @@
-document.addEventListener('DOMContentLoaded', function () {
-  const multiselect = document.getElementById('multiselect');
-  const instruments = document.getElementById('instruments');
-  const saveButton = document.getElementById('saveChanges');
-  const resetButton = document.getElementById('resetButton');
-  const apiForm = document.getElementById('apiForm');
-  const song_card = document.getElementById('song-card');
+document.addEventListener('DOMContentLoaded', () => {
+  const elements = {
+    multiselect: document.getElementById('multiselect'),
+    instruments: document.getElementById('instruments'),
+    saveButton: document.getElementById('saveChanges'),
+    resetButton: document.getElementById('resetButton'),
+    apiForm: document.getElementById('apiForm'),
+    songCard: document.getElementById('song-card'),
+    submitButton: document.getElementById('submitButton'),
+    submitLabel: document.getElementById('submitLabel'),
+    dynamicInputContainer: document.getElementById('dynamic-input-container'),
+    cover: document.getElementById('cover'),
+    songTitle: document.getElementById('song-title'),
+    tags: document.getElementById('tags'),
+    lyricsContent: document.getElementById('lyricsContent'),
+    vocals: document.getElementById('vocals'),
+    autoplay: document.getElementById('autoplay'),
+    customTags: document.getElementById('custom'),
+    volume: document.getElementById('volume'),
+    apiEndpoint: document.getElementById('api-endpoint'),
+    authToken: document.getElementById('auth-token'),
+    addInputBtn: document.getElementById('add-input-btn'),
+    stopMusic: document.getElementById('stopMusic'),
+    nextSong: document.getElementById('nextSong'),
+  };
 
-  // Load saved settings from Chrome storage
-  chrome.storage.sync.get(['selectedOptions', 'vocals', 'autoplay', 'customTags', 'instruments', 'volume', 'api', 'authToken', 'dynamicFields'], function(data) {
-    if (data.selectedOptions) {
-      const options = JSON.parse(data.selectedOptions);
+  const isDebugMode = true;
+
+  const debugLog = (message, data) => {
+    if (isDebugMode) {
+      console.debug(message, data);
+    }
+  };
+
+  const getStoredData = (keys, callback) => {
+    chrome.storage.sync.get(keys, callback);
+  };
+
+  const setStoredData = (data, callback) => {
+    chrome.storage.sync.set(data, callback);
+  };
+
+  const loadSettings = () => {
+    getStoredData(
+      ['selectedOptions', 'vocals', 'autoplay', 'customTags', 'instruments', 'volume', 'api', 'authToken', 'dynamicFields'],
+      (data) => {
+        fillSelectOptions(elements.multiselect, data.selectedOptions);
+        fillSelectOptions(elements.instruments, data.instruments);
+        elements.vocals.checked = data.vocals || false;
+        elements.autoplay.checked = data.autoplay || false;
+        elements.customTags.value = data.customTags || '';
+        elements.volume.value = data.volume || '50';
+        elements.apiEndpoint.value = data.api || '';
+        elements.authToken.value = data.authToken || '';
+        (data.dynamicFields ? JSON.parse(data.dynamicFields) : [{}]).forEach(field => addInputRow(field.url, field.selector));
+      }
+    );
+  };
+
+  const fillSelectOptions = (selectElement, values) => {
+    if (values) {
+      const options = JSON.parse(values);
       for (const option of options) {
-        const opt = Array.from(multiselect.options).find(o => o.value === option);
-        if (opt) {
-          opt.selected = true;
-        }
+        const opt = Array.from(selectElement.options).find(o => o.value === option);
+        if (opt) opt.selected = true;
       }
     }
-    if (data.instruments) {
-      const options = JSON.parse(data.instruments);
-      for (const option of options) {
-        const opt = Array.from(instruments.options).find(o => o.value === option);
-        if (opt) {
-          opt.selected = true;
-        }
+  };
+
+  const setSongCard = () => {
+    chrome.storage.local.get(['song'], (data) => {
+      if (data.song) {
+        debugLog('CURRENT_SONG_DATA', data.song);
+        elements.cover.src = data.song.image_url;
+        elements.songTitle.innerText = data.song.title;
+        elements.tags.innerText = `Tags: ${data.song.tags}`;
+        elements.lyricsContent.innerText = data.song.lyric;
+        elements.songCard.classList.remove('d-none');
       }
+    });
+  };
+
+  const syncSettings = () => {
+    const selectedOptions = Array.from(elements.multiselect.selectedOptions).map(option => option.value);
+    const selectedInstruments = Array.from(elements.instruments.selectedOptions).map(option => option.value);
+    const dynamicFields = Array.from(elements.dynamicInputContainer.children).map(container => ({
+      url: container.querySelector('.url-input').value,
+      selector: container.querySelector('.selector-input').value
+    }));
+
+    const settings = {
+      selectedOptions: JSON.stringify(selectedOptions),
+      instruments: JSON.stringify(selectedInstruments),
+      vocals: elements.vocals.checked,
+      autoplay: elements.autoplay.checked,
+      customTags: elements.customTags.value,
+      volume: elements.volume.value,
+      api: elements.apiEndpoint.value,
+      authToken: elements.authToken.value,
+      dynamicFields: JSON.stringify(dynamicFields)
+    };
+
+    setStoredData(settings, () => {
+      debugLog('Settings saved.', settings);
+      bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+    });
+  };
+
+  const resetSettings = () => {
+    elements.multiselect.selectedIndex = -1;
+    elements.instruments.selectedIndex = -1;
+    elements.vocals.checked = false;
+    elements.autoplay.checked = false;
+    elements.customTags.value = '';
+    elements.volume.value = '50';
+    elements.apiEndpoint.value = 'http://localhost:3000/api/chatgpt';
+    elements.authToken.value = '';
+
+    chrome.storage.sync.clear();
+    elements.dynamicInputContainer.innerHTML = '';
+    addInputRow();
+    syncSettings();
+  };
+
+  const toggleAccordion = (panel) => {
+    panel.classList.toggle('expanded');
+    panel.style.maxHeight = panel.classList.contains('expanded') ? `${panel.scrollHeight}px` : '0';
+  };
+
+  const updatePanelMaxHeight = (panel) => {
+    if (panel.classList.contains('expanded')) {
+      panel.style.maxHeight = `${panel.scrollHeight}px`;
     }
-    if (data.vocals) {
-      document.getElementById('vocals').checked = data.vocals;
+  };
+
+  const createInput = (type, className, placeholder, value) => {
+    const input = document.createElement('input');
+    input.type = type;
+    input.className = className;
+    input.placeholder = placeholder;
+    input.value = value;
+    return input;
+  };
+
+  const createButton = (innerHTML, className, style) => {
+    const button = document.createElement('button');
+    button.innerHTML = innerHTML;
+    button.className = className;
+    button.style = style;
+    return button;
+  };
+
+  const addInputRow = (url = '', selector = '') => {
+    const inputsContainer = document.createElement('div');
+    inputsContainer.className = 'inputs-container my-2';
+
+    const urlInput = createInput('text', 'url-input', 'Enter URL', url);
+    const selectorInput = createInput('text', 'selector-input mx-1', 'Enter targetSelector', selector);
+    const removeBtn = createButton('-', 'btn btn-danger btn-sm', 'width: 35px; position: relative; top: -2px;');
+
+    removeBtn.onclick = () => {
+      elements.dynamicInputContainer.removeChild(inputsContainer);
+      updatePanelMaxHeight(elements.dynamicInputContainer.parentElement);
+    };
+
+    inputsContainer.append(urlInput, selectorInput, removeBtn);
+    elements.dynamicInputContainer.appendChild(inputsContainer);
+    updatePanelMaxHeight(elements.dynamicInputContainer.parentElement);
+  };
+
+  const stopMusic = async () => {
+    await chrome.runtime.sendMessage({ stop: true });
+    elements.songCard.classList.add('d-none');
+  };
+
+  const skipSong = async () => {
+    await chrome.runtime.sendMessage({ type: 'PLAYBACK_DONE' });
+  };
+
+  const togglePanels = () => {
+    const acc = document.querySelectorAll(".accordion");
+    acc.forEach(panel => {
+      panel.addEventListener("click", function () {
+        this.classList.toggle("active");
+        toggleAccordion(this.nextElementSibling);
+      });
+    });
+  };
+
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.generating === true) {
+      elements.submitButton.disabled = true
+      elements.submitLabel.classList.add("spinner-border", "spinner-border-sm");
     }
-    if (data.autoplay) {
-      document.getElementById('autoplay').checked = data.autoplay;
+
+    if (message.generating === false) {
+      elements.submitButton.disabled = false
+      elements.submitLabel.classList.remove("spinner-border", "spinner-border-sm");
     }
-    if (data.customTags) {
-      document.getElementById('custom').value = data.customTags;
-    }
-    if (data.volume) {
-      document.getElementById('volume').value = data.volume;
-    }
-    if (data.api) {
-      document.getElementById('api-endpoint').value = data.api;
-    }
-    if (data.authToken) {
-      document.getElementById('auth-token').value = data.authToken;
-    }
-    if (data.dynamicFields) {
-      const dynamicFields = JSON.parse(data.dynamicFields);
-      dynamicFields.forEach(field => addInputRow(field.url, field.selector));
-    } else {
-      // Add one initial row by default if no dynamic fields are saved
-      addInputRow();
-    }
+
+    if (message.current_song === true) setSongCard();
   });
 
-  function setSongCard() {
-    chrome.storage.local.get(['song'], function(data) {
-      console.log('CURRENT_SONG_DATA', data.song);
-      document.getElementById('cover').src = data.song.image_url;
-      document.getElementById('song-title').innerText = data.song.title;
-      document.getElementById('tags').innerText = `Tags: ${data.song.tags}`;
-      document.getElementById('lyricsContent').innerText = data.song.lyric;
-      song_card.classList.remove('d-none');
-    });
-  }
+  elements.apiForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    await chrome.runtime.sendMessage({ submit: true });
+  });
 
-  // Set current song if playing
-  chrome.storage.local.get(['song'], function(data) {
+  elements.addInputBtn.addEventListener('click', () => addInputRow());
+  elements.saveButton.addEventListener('click', syncSettings);
+  elements.resetButton.addEventListener('click', resetSettings);
+  elements.stopMusic.addEventListener('click', stopMusic);
+  elements.nextSong.addEventListener('click', skipSong);
+
+  togglePanels();
+  loadSettings();
+
+  chrome.storage.local.get(['song'], (data) => {
     if (Object.keys(data.song).length) {
       setSongCard();
     }
   });
-
-  function syncSettings() {
-    const selectedOptions = Array.from(multiselect.selectedOptions).map(option => option.value);
-    const selectedInstruments = Array.from(instruments.selectedOptions).map(option => option.value);
-    const vocals = document.getElementById('vocals').checked;
-    const autoplay = document.getElementById('autoplay').checked;
-    const customTags = document.getElementById('custom').value;
-    const volume = document.getElementById('volume').value;
-    const api = document.getElementById('api-endpoint').value;
-    const authToken = document.getElementById('auth-token').value;
-    const dynamicFields = Array.from(dynamicInputContainer.children).map(container => {
-      return {
-        url: container.querySelector('.url-input').value,
-        selector: container.querySelector('.selector-input').value
-      };
-    });
-
-    // Save selections to Chrome storage
-    chrome.storage.sync.set({
-      selectedOptions: JSON.stringify(selectedOptions),
-      instruments: JSON.stringify(selectedInstruments),
-      vocals: vocals,
-      autoplay: autoplay,
-      customTags: customTags,
-      volume: volume,
-      api: api,
-      authToken: authToken,
-      dynamicFields: JSON.stringify(dynamicFields)
-    }, function() {
-      console.log('Settings saved.');
-      const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
-      modal.hide();
-    });
-  }
-
-  // Function to toggle the accordion
-  function toggleAccordion(panel) {
-    if (panel.classList.contains('expanded')) {
-      panel.classList.remove('expanded');
-      panel.style.maxHeight = '0';
-    } else {
-      panel.classList.add('expanded');
-      panel.style.maxHeight = panel.scrollHeight + 'px';
-    }
-  }
-
-  // Open SettingsAccordion
-  var acc = document.getElementsByClassName("accordion");
-  for (let i = 0; i < acc.length; i++) {
-    acc[i].addEventListener("click", function() {
-      this.classList.toggle("active");
-      const panel = this.nextElementSibling;
-      toggleAccordion(panel);
-    });
-  }
-
-  // Handle targetSelector menu
-  const addInputBtn = document.getElementById('add-input-btn');
-  const dynamicInputContainer = document.getElementById('dynamic-input-container');
-
-  function updatePanelMaxHeight(panel) {
-    if (panel.classList.contains('expanded')) {
-      panel.style.maxHeight = panel.scrollHeight + 'px';
-    }
-  }
-
-  function addInputRow(url = '', selector = '') {
-    const inputsContainer = document.createElement('div');
-    inputsContainer.className = 'inputs-container my-2';
-
-    const urlInput = document.createElement('input');
-    urlInput.type = 'text';
-    urlInput.className = 'url-input';
-    urlInput.placeholder = 'Enter URL';
-    urlInput.value = url;
-
-    const selectorInput = document.createElement('input');
-    selectorInput.type = 'text';
-    selectorInput.className = 'selector-input mx-1';
-    selectorInput.placeholder = 'Enter targetSelector';
-    selectorInput.value = selector;
-
-    const removeBtn = document.createElement('button');
-    removeBtn.innerHTML = '-';
-    removeBtn.className = 'btn btn-danger btn-sm';
-    removeBtn.style = 'width: 35px; position: relative; top: -2px;';
-    removeBtn.onclick = function() {
-      dynamicInputContainer.removeChild(inputsContainer);
-      updatePanelMaxHeight(dynamicInputContainer.parentElement);
-    };
-
-    inputsContainer.appendChild(urlInput);
-    inputsContainer.appendChild(selectorInput);
-    inputsContainer.appendChild(removeBtn);
-    dynamicInputContainer.appendChild(inputsContainer);
-    
-    updatePanelMaxHeight(dynamicInputContainer.parentElement);
-  }
-
-  addInputBtn.addEventListener('click', function() {
-    addInputRow();
-  });
-
-  // Handle Save Changes button
-  saveButton.addEventListener('click', function() {
-    syncSettings();
-  });
-
-  // Handle Reset Button
-  resetButton.addEventListener('click', function() {
-    for (let i = 0; i < multiselect.options.length; i++) {
-      multiselect.options[i].selected = false;
-    }
-    for (let i = 0; i < instruments.options.length; i++) {
-      instruments.options[i].selected = false;
-    }
-    document.getElementById('vocals').checked = false;
-    document.getElementById('custom').value = '';
-    document.getElementById('autoplay').checked = false;
-    document.getElementById('volume').value = '50';
-    document.getElementById('api-endpoint').value = 'http://localhost:3000/api/chatgpt';
-    document.getElementById('auth-token').value = '';
-    chrome.storage.sync.clear();
-
-    // Clear dynamic input fields
-    dynamicInputContainer.innerHTML = '';
-    addInputRow();
-
-    syncSettings();
-  });
-
-  // Set Spinning Button
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    const submitButton = document.getElementById('submitButton');
-    const submitLabel = document.getElementById('submitLabel');
-
-    if (message.generating === true) {
-      submitButton.setAttribute("disabled", true);
-      submitLabel.classList.add("spinner-border", "spinner-border-sm");
-    }
-
-    if (message.generating === false) {
-      submitButton.removeAttribute("disabled");
-      submitLabel.classList.remove("spinner-border", "spinner-border-sm");
-    }
-
-    if (message.current_song === true) {
-      setSongCard();
-    }
-  });
-
-  async function stopMusic() {
-    await chrome.runtime.sendMessage({ stop: true });
-    song_card.classList.add('d-none');
-  }
-
-  // Event listener for form submission
-  document.getElementById('apiForm').addEventListener('submit', async function(event) {
-    event.preventDefault();
-
-    await chrome.runtime.sendMessage({ submit: true });
-  });
-
-  document.getElementById('stopMusic').addEventListener('click', stopMusic);
 });

@@ -5,12 +5,10 @@ function getSettings(callback) {
     });
   }
   
-  // Main initialization function
   function init() {
     getSettings(function(dynamicFields) {
       let targetSelector = '';
   
-      // Loop through dynamic fields and match against the current URL
       for (const field of dynamicFields) {
         if (window.location.href.includes(field.url)) {
           targetSelector = field.selector;
@@ -28,5 +26,4 @@ function getSettings(callback) {
     });
   }
   
-  // Run the init function on script load
   init();
