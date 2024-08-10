@@ -4,10 +4,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const saveButton = document.getElementById('saveChanges');
   const resetButton = document.getElementById('resetButton');
   const apiForm = document.getElementById('apiForm');
-  const song_card = document.getElementById('song-card')
+  const song_card = document.getElementById('song-card');
 
   // Load saved settings from Chrome storage
-  chrome.storage.sync.get(['selectedOptions', 'vocals', 'autoplay', 'customTags', 'instruments', 'volume', 'api'], function(data) {
+  chrome.storage.sync.get(['selectedOptions', 'vocals', 'autoplay', 'customTags', 'instruments', 'volume', 'api', 'authToken'], function(data) {
     if (data.selectedOptions) {
       const options = JSON.parse(data.selectedOptions);
       for (const option of options) {
@@ -41,18 +41,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (data.api) {
       document.getElementById('api-endpoint').value = data.api;
     }
+    if (data.authToken) {
+      document.getElementById('auth-token').value = data.authToken;
+    }
   });
 
-function setSongCard() {
-  chrome.storage.local.get(['song'], function(data) {
-    console.log('CURRENT_SONG_DATA', data.song);
-    document.getElementById('cover').src = data.song.image_url;
-    document.getElementById('song-title').innerText = data.song.title;
-    document.getElementById('tags').innerText = `Tags: ${data.song.tags}`;
-    document.getElementById('lyricsContent').innerText = data.song.lyric;
-    song_card.classList.remove('d-none');
-  });
-}
+  function setSongCard() {
+    chrome.storage.local.get(['song'], function(data) {
+      console.log('CURRENT_SONG_DATA', data.song);
+      document.getElementById('cover').src = data.song.image_url;
+      document.getElementById('song-title').innerText = data.song.title;
+      document.getElementById('tags').innerText = `Tags: ${data.song.tags}`;
+      document.getElementById('lyricsContent').innerText = data.song.lyric;
+      song_card.classList.remove('d-none');
+    });
+  }
 
   // Set current song if playing
   chrome.storage.local.get(['song'], function(data) {
@@ -69,8 +72,9 @@ function setSongCard() {
     const customTags = document.getElementById('custom').value;
     const volume = document.getElementById('volume').value;
     const api = document.getElementById('api-endpoint').value;
+    const authToken = document.getElementById('auth-token').value;
 
-    // Save selections to chrome storage
+    // Save selections to Chrome storage
     chrome.storage.sync.set({
       selectedOptions: JSON.stringify(selectedOptions),
       instruments: JSON.stringify(selectedInstruments),
@@ -78,11 +82,28 @@ function setSongCard() {
       autoplay: autoplay,
       customTags: customTags,
       volume: volume,
-      api: api
+      api: api,
+      authToken: authToken
     }, function() {
       console.log('Settings saved.');
       const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
       modal.hide();
+    });
+  }
+
+  // Open SettingsAccordion
+  var acc = document.getElementsByClassName("accordion");
+  var i;
+  
+  for (i = 0; i < acc.length; i++) {
+    acc[i].addEventListener("click", function() {
+      this.classList.toggle("active");
+      var panel = this.nextElementSibling;
+      if (panel.style.maxHeight) {
+        panel.style.maxHeight = null;
+      } else {
+        panel.style.maxHeight = panel.scrollHeight + "px";
+      }
     });
   }
 
@@ -104,21 +125,20 @@ function setSongCard() {
     document.getElementById('autoplay').checked = false;
     document.getElementById('volume').value = '50';
     document.getElementById('api-endpoint').value = 'http://localhost:3000/api/chatgpt';
+    document.getElementById('auth-token').value = '';
     chrome.storage.sync.clear();
 
     syncSettings();
   });
 
-
   // Set Spinning Button
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-
     const submitButton = document.getElementById('submitButton');
     const submitLabel = document.getElementById('submitLabel');
 
     if (message.generating === true) {
-    submitButton.setAttribute("disabled", true);
-    submitLabel.classList.add("spinner-border", "spinner-border-sm");
+      submitButton.setAttribute("disabled", true);
+      submitLabel.classList.add("spinner-border", "spinner-border-sm");
     }
 
     if (message.generating === false) {
@@ -140,7 +160,7 @@ function setSongCard() {
   document.getElementById('apiForm').addEventListener('submit', async function(event) {
     event.preventDefault();
 
-    await chrome.runtime.sendMessage({ submit: true});
+    await chrome.runtime.sendMessage({ submit: true });
   });
 
   document.getElementById('stopMusic').addEventListener('click', stopMusic);

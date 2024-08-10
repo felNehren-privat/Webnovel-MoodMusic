@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Form to API</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="app.js"></script>
   <link rel="stylesheet" href="css/bootstrap.min.css" >
+  <link rel="stylesheet" href="css/font-awesome.min.css">
+  <script src="app.js"></script>
   <script src="js/bootstrap.min.js" ></script>
 </head>
 <body>
@@ -164,10 +165,19 @@
                 <label for="custom" class="form-label">Custom Tags</label>
                 <input type="text" id="custom" class="form-control">
               </div>
-              <div class="mb-3">
-                <label for="api-endpoint" class="form-label">Api Endpoint</label>
-                <input type="text" id="api-endpoint" class="form-control" value="http://localhost:3000/api/chatgpt">
+
+              <button type="button" class="accordion">Api-Settings</button>
+              <div class="panel">
+                <div class="my-3">
+                  <label for="api-endpoint" class="form-label">API Endpoint</label>
+                  <input type="text" id="api-endpoint" class="form-control" value="http://localhost:3000/api/chatgpt">
+                </div>
+                <div>
+                  <label for="auth-token" class="form-label">Auth Token</label>
+                  <input type="text" id="auth-token" class="form-control" value="default-token">
+                </div>
               </div>
+
               <div class="modal-footer">
                 <button type="button" id="resetButton" class="btn btn-warning">Reset Selection</button>
                 <button type="button" class="btn btn-primary" id="saveChanges">Save changes</button>
