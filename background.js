@@ -57,11 +57,26 @@ async function setupOffscreenDocument(path) {
     }
 }
 
-async function handleFormSubmission(submitted = false) {
-    if (submitted) {
-        await chrome.runtime.sendMessage({ generating: true });
-    }
+async function setError(submitted = false) {
 
+    if (submitted) {
+        await chrome.runtime.sendMessage({ generating: false });
+    }
+    chrome.notifications.create(
+        "targetSelector",
+        {
+            type: "basic",
+            iconUrl: "error.png",
+            title: 'targetSelector.',
+            message: 'No content found. Check your targetSelector.'
+        }
+    );
+    chrome.notifications.clear("targetSelector");
+
+    throw new Error('No content found. Check your targetSelector.');
+    }    
+
+async function handleFormSubmission(submitted = false) {
     chrome.storage.sync.get(
         ['selectedOptions', 'vocals', 'autoplay', 'customTags', 'volume', 'instruments', 'api', 'authToken'],
         function (syncedData) {
@@ -73,7 +88,7 @@ async function handleFormSubmission(submitted = false) {
 
             selectedOptions = selectedOptions ? selectedOptions.concat(', ', instruments) : undefined;
 
-            chrome.storage.local.get(['content', 'title', 'url'], function (localData) {
+            chrome.storage.local.get(['content', 'title', 'url'], async function (localData) {
                 const { content, title, url } = localData;
                 console.log('localData', localData);
 
@@ -85,7 +100,21 @@ async function handleFormSubmission(submitted = false) {
                     title: title
                 };
 
-                if ((submitted && !autoplay) || autoplay) {
+                if (submitted && content == '') {
+                    setError(submitted);
+                        return    
+                };
+
+                if ((submitted && !autoplay) || (autoplay && (content != '') && !submitted)) {
+                    if (submitted) {
+                        await chrome.runtime.sendMessage({ generating: true });
+                    }
+
+                    if (content == '') {
+                        setError(submitted);
+                        return
+                    }
+
                     fetch(api, {
                         method: 'POST',
                         headers: {

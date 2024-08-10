@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const multiselect = document.getElementById('multiselect');
   const instruments = document.getElementById('instruments');
   const saveButton = document.getElementById('saveChanges');
@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const song_card = document.getElementById('song-card');
 
   // Load saved settings from Chrome storage
-  chrome.storage.sync.get(['selectedOptions', 'vocals', 'autoplay', 'customTags', 'instruments', 'volume', 'api', 'authToken'], function(data) {
+  chrome.storage.sync.get(['selectedOptions', 'vocals', 'autoplay', 'customTags', 'instruments', 'volume', 'api', 'authToken', 'dynamicFields'], function(data) {
     if (data.selectedOptions) {
       const options = JSON.parse(data.selectedOptions);
       for (const option of options) {
@@ -44,6 +44,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (data.authToken) {
       document.getElementById('auth-token').value = data.authToken;
     }
+    if (data.dynamicFields) {
+      const dynamicFields = JSON.parse(data.dynamicFields);
+      dynamicFields.forEach(field => addInputRow(field.url, field.selector));
+    } else {
+      // Add one initial row by default if no dynamic fields are saved
+      addInputRow();
+    }
   });
 
   function setSongCard() {
@@ -73,6 +80,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const volume = document.getElementById('volume').value;
     const api = document.getElementById('api-endpoint').value;
     const authToken = document.getElementById('auth-token').value;
+    const dynamicFields = Array.from(dynamicInputContainer.children).map(container => {
+      return {
+        url: container.querySelector('.url-input').value,
+        selector: container.querySelector('.selector-input').value
+      };
+    });
 
     // Save selections to Chrome storage
     chrome.storage.sync.set({
@@ -83,7 +96,8 @@ document.addEventListener('DOMContentLoaded', function() {
       customTags: customTags,
       volume: volume,
       api: api,
-      authToken: authToken
+      authToken: authToken,
+      dynamicFields: JSON.stringify(dynamicFields)
     }, function() {
       console.log('Settings saved.');
       const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
@@ -91,21 +105,73 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // Function to toggle the accordion
+  function toggleAccordion(panel) {
+    if (panel.classList.contains('expanded')) {
+      panel.classList.remove('expanded');
+      panel.style.maxHeight = '0';
+    } else {
+      panel.classList.add('expanded');
+      panel.style.maxHeight = panel.scrollHeight + 'px';
+    }
+  }
+
   // Open SettingsAccordion
   var acc = document.getElementsByClassName("accordion");
-  var i;
-  
-  for (i = 0; i < acc.length; i++) {
+  for (let i = 0; i < acc.length; i++) {
     acc[i].addEventListener("click", function() {
       this.classList.toggle("active");
-      var panel = this.nextElementSibling;
-      if (panel.style.maxHeight) {
-        panel.style.maxHeight = null;
-      } else {
-        panel.style.maxHeight = panel.scrollHeight + "px";
-      }
+      const panel = this.nextElementSibling;
+      toggleAccordion(panel);
     });
   }
+
+  // Handle targetSelector menu
+  const addInputBtn = document.getElementById('add-input-btn');
+  const dynamicInputContainer = document.getElementById('dynamic-input-container');
+
+  function updatePanelMaxHeight(panel) {
+    if (panel.classList.contains('expanded')) {
+      panel.style.maxHeight = panel.scrollHeight + 'px';
+    }
+  }
+
+  function addInputRow(url = '', selector = '') {
+    const inputsContainer = document.createElement('div');
+    inputsContainer.className = 'inputs-container my-2';
+
+    const urlInput = document.createElement('input');
+    urlInput.type = 'text';
+    urlInput.className = 'url-input';
+    urlInput.placeholder = 'Enter URL';
+    urlInput.value = url;
+
+    const selectorInput = document.createElement('input');
+    selectorInput.type = 'text';
+    selectorInput.className = 'selector-input mx-1';
+    selectorInput.placeholder = 'Enter targetSelector';
+    selectorInput.value = selector;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.innerHTML = '-';
+    removeBtn.className = 'btn btn-danger btn-sm';
+    removeBtn.style = 'width: 35px; position: relative; top: -2px;';
+    removeBtn.onclick = function() {
+      dynamicInputContainer.removeChild(inputsContainer);
+      updatePanelMaxHeight(dynamicInputContainer.parentElement);
+    };
+
+    inputsContainer.appendChild(urlInput);
+    inputsContainer.appendChild(selectorInput);
+    inputsContainer.appendChild(removeBtn);
+    dynamicInputContainer.appendChild(inputsContainer);
+    
+    updatePanelMaxHeight(dynamicInputContainer.parentElement);
+  }
+
+  addInputBtn.addEventListener('click', function() {
+    addInputRow();
+  });
 
   // Handle Save Changes button
   saveButton.addEventListener('click', function() {
@@ -127,6 +193,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('api-endpoint').value = 'http://localhost:3000/api/chatgpt';
     document.getElementById('auth-token').value = '';
     chrome.storage.sync.clear();
+
+    // Clear dynamic input fields
+    dynamicInputContainer.innerHTML = '';
+    addInputRow();
 
     syncSettings();
   });

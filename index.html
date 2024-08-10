@@ -172,14 +172,20 @@
                   <label for="api-endpoint" class="form-label">API Endpoint</label>
                   <input type="text" id="api-endpoint" class="form-control" value="http://localhost:3000/api/chatgpt">
                 </div>
-                <div>
+                <div class="mb-3">
                   <label for="auth-token" class="form-label">Auth Token</label>
                   <input type="text" id="auth-token" class="form-control" value="default-token">
                 </div>
               </div>
 
+              <button type="button" class="accordion">Add URL and Selector</button>
+              <div class="panel">
+                <div id="dynamic-input-container"></div>
+                <button type="button" id="add-input-btn" class="btn btn-secondary">Add Input Fields</button>
+              </div>
+
               <div class="modal-footer">
-                <button type="button" id="resetButton" class="btn btn-warning">Reset Selection</button>
+                <button type="button" id="resetButton" class="btn btn-warning">Reset Settings</button>
                 <button type="button" class="btn btn-primary" id="saveChanges">Save changes</button>
               </div>
             </form>
