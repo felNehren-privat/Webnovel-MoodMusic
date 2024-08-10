@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form to API</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js"></script>
+  <link rel="stylesheet" href="css/bootstrap.min.css" >
+  <script src="js/bootstrap.min.js" ></script>
+</head>
+<body>
+    <div class="container my-5">
+      <div class="p-3 text-center bg-body-tertiary rounded-7">
+        <img class="logo" src="assets/music-book.svg" alt="Icon"/>
+        <h1 class="text-body-emphasis">Webnovel MoodMusic</h1>
+        <p class="col-lg-8 mx-auto fs-5 text-muted">
+          The perfect soundtrack for every occasion!
+        </p>
+        <form id="apiForm">
+          <div id="song-card" class="d-none d-flex align-items-center p-3 border rounded shadow-sm">
+            <div class="d-flex flex-column align-items-center mr-3">
+              <img id="cover" src="assets/placeholder_cover.png" alt="Song Cover" class="img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;">
+              <!-- Show Lyrics Button directly below the cover -->
+              <button style="width: 100px;" type="button" class="btn btn-secondary mt-2" data-bs-toggle="modal" data-bs-target="#lyricsModal">
+                Lyrics
+              </button>
+            </div>
+            <div class="me-auto p-3 mx-4 border rounded shadow-sm col-8">
+                <h5 id="song-title" class="mb-0">Song Title</h5>
+                <p id="tags" class="text-muted mb-0">MoodMusic</p>
+            </div>
+          </div>
+          <div class="modal-footer flex-column align-items-stretch w-100 gap-2 mt-2 pb-3 border-top-0">
+            <button id="submitButton" type="submit" class="btn btn-lg btn-primary">
+              <span id="submitLabel" role="status" aria-hidden="true"></span>
+              Generate
+            </button>
+            <button id="stopMusic" type="button" class="btn btn-lg btn-primary">
+              <span id="stopMusicLabel" role="status" aria-hidden="true"></span>
+              Stop the Music!
+          </button>
+          </div>
+        </form>
+        <button type="button" class="btn btn-primary position-fixed top-0 end-0 m-3" data-bs-toggle="modal" data-bs-target="#settingsModal">
+          Settings
+        </button>
+      </div>
+    </div>
+    
+    <!-- Lyrics Modal -->
+    <div class="modal fade" id="lyricsModal" tabindex="-1" aria-labelledby="lyricsModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="lyricsModalLabel">Lyrics</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p id="lyricsContent">Here are the lyrics for the current song...</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="settingsModalLabel">Settings</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="modalForm">
+              <div class="mb-3">
+                <label for="vocals" class="form-label">Vocals</label>
+                <input type="checkbox" id="vocals" name="vocals">
+                <label for="autoplay" class="form-label">Autoplay</label>
+                <input type="checkbox" id="autoplay" name="autoplay">
+              </br>
+                <label for="volume" class="form-label">Volume</label>
+                <input type="range" min="0" max="100" defaultvalue="50" class="slider" id="volume">
+              </div>
+              <div class="mb-3">
+                <label for="multiselect" class="form-label">Select additional tags:</label>
+                <select id="multiselect" name="multiselect" class="form-select" multiple>
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                  <option value="multiple">Multiple</option>
+                  <option value="orchestral">Orchestral</option>
+                  <option value="epic">Epic</option>
+                  <option value="celtic">Celtic</option>
+                  <option value="ambient">Ambient</option>
+                  <option value="mystical">Mystical</option>
+                  <option value="medieval">Medieval</option>
+                  <option value="elven">Elven</option>
+                  <option value="dark">Dark</option>
+                  <option value="heroic">Heroic</option>
+                  <option value="enchanting">Enchanting</option>
+                  <option value="adventurous">Adventurous</option>
+                  <option value="mysterious">Mysterious</option>
+                  <option value="slow">Slow</option>
+                  <option value="fast">Fast</option>
+                  <option value="uplifting">Uplifting</option>
+                  <option value="majestic">Majestic</option>
+                  <option value="battle">Battle</option>
+                  <option value="dreamy">Dreamy</option>
+                  <option value="haunting">Haunting</option>
+                  <option value="fantasy folk">Fantasy Folk</option>
+                  <option value="chill">Chill</option>
+                  <option value="romantic">Romantic</option>
+                  <option value="spooky">Spooky</option>
+                  <option value="whimsical">Whimsical</option>
+                  <option value="cinematic">Cinematic</option>
+                  <option value="energetic">Energetic</option>
+                  <option value="joyful">Joyful</option>
+                  <option value="sad">Sad</option>
+                  <option value="melancholic">Melancholic</option>
+                  <option value="peaceful">Peaceful</option>
+                  <option value="intense">Intense</option>
+                  <option value="groovy">Groovy</option>
+                  <option value="reflective">Reflective</option>
+                  <option value="playful">Playful</option>
+                  <option value="aggressive">Aggressive</option>
+                  <option value="ethereal">Ethereal</option>
+                  <option value="nostalgic">Nostalgic</option>
+                  <option value="motivational">Motivational</option>
+                  <option value="gritty">Gritty</option>
+                  <option value="lush">Lush</option>
+                  <option value="sorrowful">Sorrowful</option>
+                  <option value="majestic">Majestic</option>
+                  <option value="thrilling">Thrilling</option>
+                  <option value="melodic">Melodic</option>
+                </select>
+                <label for="instruments" class="form-label">Select optional instruments:</label>
+                <select id="instruments" name="instruments" class="form-select" multiple>
+                  <option value="acoustic guitar">Acoustic Guitar</option>
+                  <option value="electric guitar">Electric Guitar</option>
+                  <option value="piano">Piano</option>
+                  <option value="violin">Violin</option>
+                  <option value="drums">Drums</option>
+                  <option value="flute">Flute</option>
+                  <option value="saxophone">Saxophone</option>
+                  <option value="trumpet">Trumpet</option>
+                  <option value="cello">Cello</option>
+                  <option value="harp">Harp</option>
+                  <option value="ukulele">Ukulele</option>
+                  <option value="accordion">Accordion</option>
+                  <option value="trombone">Trombone</option>
+                  <option value="bass guitar">Bass Guitar</option>
+                  <option value="synthesizer">Synthesizer</option>
+                  <option value="clarinet">Clarinet</option>
+                  <option value="mandolin">Mandolin</option>
+                  <option value="banjo">Banjo</option>
+                  <option value="harpsichord">Harpsichord</option>
+                  <option value="oboe">Oboe</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="custom" class="form-label">Custom Tags</label>
+                <input type="text" id="custom" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label for="api-endpoint" class="form-label">Api Endpoint</label>
+                <input type="text" id="api-endpoint" class="form-control" value="http://localhost:3000/api/chatgpt">
+              </div>
+              <div class="modal-footer">
+                <button type="button" id="resetButton" class="btn btn-warning">Reset Selection</button>
+                <button type="button" class="btn btn-primary" id="saveChanges">Save changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+</body>
+</html>
