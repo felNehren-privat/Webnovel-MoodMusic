@@ -37,6 +37,33 @@ function addToQueue(item, volume) {
   audioQueue.push({ item, volume });
 }
 
+async function playSongs(api, authToken, volume) {
+  debugLog('Fetching songs from /get route', { api });
+
+  try {
+    const response = await fetch(`${api}/get`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'auth-token': authToken
+      }
+    });
+
+    if (response.ok) {
+      const songs = await response.json();
+      debugLog('Fetched songs', { songs });
+      songs.forEach(song => addToQueue(song, parseFloat(volume) / 100));
+
+      playNextInQueue();
+    } else {
+      await setError(false, 'Failed to Fetch Songs', 'Failed to fetch songs from the /get route.');
+    }
+  } catch (error) {
+    debugLog('Network error while fetching songs', error);
+    await setError(false, 'Network Error', 'Could not connect to the API. Please check your internet connection or API endpoint.');
+  }
+}
+
 let creating;
 async function setupOffscreenDocument(path) {
   const offscreenUrl = chrome.runtime.getURL(path);
@@ -79,7 +106,7 @@ async function handleFormSubmission(submitted = false) {
     'selectedOptions', 'vocals', 'autoplay', 'customTags', 'volume', 'instruments', 'api', 'authToken'
   ]);
   let { selectedOptions, vocals, autoplay, customTags, volume, instruments } = syncedData;
-  const api = syncedData.api || 'http://localhost:3000/api/chatgpt';
+  const api = `${syncedData.api}/chatgpt` || 'http://localhost:3000/api/chatgpt';
   const authToken = syncedData.authToken || '';
 
   debugLog('Synced data', syncedData);
@@ -123,6 +150,7 @@ async function handleFormSubmission(submitted = false) {
       });
 
       if (response.ok) {
+        audioQueue = [];
         const jsonResponse = await response.json();
         jsonResponse.forEach(item => addToQueue(item, parseFloat(volume) / 100));
         playNextInQueue(submitted);
@@ -161,5 +189,14 @@ chrome.runtime.onMessage.addListener(async function (request) {
 
   if (request.type === 'PLAYBACK_DONE') {
     playNextInQueue();
+  }
+
+  if (request.play === true) {
+    const syncedData = await chrome.storage.sync.get(['api', 'authToken', 'volume']);
+    const api = syncedData.api || 'http://localhost:3000/api';
+    const authToken = syncedData.authToken || '';
+    const volume = syncedData.volume || 25;
+
+    playSongs(api, authToken, volume);
   }
 });

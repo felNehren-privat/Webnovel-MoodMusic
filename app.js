@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addInputBtn: document.getElementById('add-input-btn'),
     stopMusic: document.getElementById('stopMusic'),
     nextSong: document.getElementById('nextSong'),
+    playButton: document.getElementById('playSong'),
   };
 
   const isDebugMode = true;
@@ -177,6 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
     await chrome.runtime.sendMessage({ type: 'PLAYBACK_DONE' });
   };
 
+  const playSong = async () => {
+    await chrome.runtime.sendMessage({ play: true });
+  };
+
   const togglePanels = () => {
     const acc = document.querySelectorAll(".accordion");
     acc.forEach(panel => {
@@ -211,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
   elements.resetButton.addEventListener('click', resetSettings);
   elements.stopMusic.addEventListener('click', stopMusic);
   elements.nextSong.addEventListener('click', skipSong);
+  elements.playButton.addEventListener('click', playSong);
 
   togglePanels();
   loadSettings();
